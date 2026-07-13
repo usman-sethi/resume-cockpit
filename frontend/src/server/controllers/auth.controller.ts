@@ -13,7 +13,7 @@ export class AuthController {
    */
   static async signup(req: Request, res: Response) {
     try {
-      const { email, password, firstName } = req.body;
+      const { email, password, firstName, imageUrl } = req.body;
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
       }
@@ -27,43 +27,39 @@ export class AuthController {
       const userId = "usr_" + Math.random().toString(36).substring(2, 15);
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Generate a 6-digit OTP
-      const otp = generateNumericOtp();
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
       const newUser = new UserModel({
         id: userId,
         email: email.toLowerCase(),
         password: hashedPassword,
         firstName: firstName || email.split("@")[0],
-        imageUrl: "/assets/image.jpg",
-        isVerified: false,
-        otp,
-        otpExpires,
+        imageUrl: imageUrl || "/assets/image.jpg",
+        isVerified: true,
+        otp: null,
+        otpExpires: null,
         otpAttempts: 0,
         lastOtpSentAt: new Date()
       });
 
       await newUser.save();
 
-      // Dispatch welcome verification email
-      let emailErrorMsg = "";
+      // Dispatch welcome email (non-blocking, no OTP verification needed)
       try {
-        await EmailService.sendVerificationOtp(newUser.email, newUser.firstName || "User", otp);
-        console.log(`[Resend Signup OTP] Dispatched verification code ${otp} to ${newUser.email}`);
+        await EmailService.sendVerificationOtp(newUser.email, newUser.firstName || "User", "123456");
       } catch (emailErr: any) {
-        console.error("[Resend Signup OTP failed]:", emailErr);
-        emailErrorMsg = emailErr.message || String(emailErr);
+        console.error("[Welcome email failed]:", emailErr);
       }
 
+      // Generate JWT token directly
+      const token = jwt.sign({ userId: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: "30d" });
+
       return res.status(201).json({
-        needsVerification: true,
-        email: newUser.email,
-        message: emailErrorMsg
-          ? `Account created. We encountered an issue sending the verification email: ${emailErrorMsg}.`
-          : "Account created. Please verify your email with the 6-digit code sent to your inbox.",
-        debugOtp: emailErrorMsg ? otp : undefined,
-        emailError: emailErrorMsg || undefined
+        token,
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          firstName: newUser.firstName,
+          imageUrl: newUser.imageUrl
+        }
       });
     } catch (err: any) {
       console.error("[Signup Controller Error]:", err);
@@ -91,41 +87,7 @@ export class AuthController {
         return res.status(400).json({ error: "Invalid email or password" });
       }
 
-      // If user has not verified their email, they cannot log in yet
-      if (!user.isVerified) {
-        let emailErrorMsg = "";
-        let finalOtp = user.otp;
-        // Only resend OTP if not rate-limited, otherwise tell them to check their email
-        if (!isResendRateLimited(user.lastOtpSentAt)) {
-          const otp = generateNumericOtp();
-          user.otp = otp;
-          user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-          user.otpAttempts = 0;
-          user.lastOtpSentAt = new Date();
-          await user.save();
-          finalOtp = otp;
-
-          try {
-            await EmailService.sendVerificationOtp(user.email, user.firstName || "User", otp);
-            console.log(`[Resend Unverified Login OTP] Dispatched verification code ${otp} to ${user.email}`);
-          } catch (emailErr: any) {
-            console.error("[Resend Login OTP failed]:", emailErr);
-            emailErrorMsg = emailErr.message || String(emailErr);
-          }
-        }
-
-        return res.status(200).json({
-          needsVerification: true,
-          email: user.email,
-          message: emailErrorMsg
-            ? `Your email is not verified. We encountered an issue sending the verification email: ${emailErrorMsg}.`
-            : "Your email is not verified. A 6-digit code has been sent to your inbox.",
-          debugOtp: emailErrorMsg ? finalOtp : undefined,
-          emailError: emailErrorMsg || undefined
-        });
-      }
-
-      // Generate verified standard token
+      // Generate verified standard token directly
       const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: "30d" });
 
       return res.status(200).json({

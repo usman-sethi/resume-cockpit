@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useResumeStore } from "../../stores/resumeStore";
+import { useCustomUser, CustomSignInButton } from "../../components/ClerkAuthWrapper";
+import AvatarGalleryPicker from "../../components/AvatarGalleryPicker";
+import FileUploader from "../../components/FileUploader";
 import {
   ArrowLeft,
   RotateCcw,
@@ -18,7 +21,8 @@ import {
   RefreshCw,
   Cpu,
   CornerDownRight,
-  ShieldCheck
+  ShieldCheck,
+  User
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -28,10 +32,61 @@ interface SettingsPageProps {
 
 export default function SettingsPage({ onBack }: SettingsPageProps) {
   const { settings, updateSettings, resetToDefaultDataset, clearAllCache, addActivity } = useResumeStore();
-  const [activeTab, setActiveTab] = useState<"general" | "ai">("general");
+  const [activeTab, setActiveTab] = useState<"profile" | "general" | "ai">("profile");
   const [telemetry, setTelemetry] = useState<any>(null);
   const [loadingTelemetry, setLoadingTelemetry] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const { isSignedIn, user, updateUser } = useCustomUser();
+  const [profileName, setProfileName] = useState("");
+  const [profilePic, setProfilePic] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.firstName || "");
+      setProfilePic(user.imageUrl || "");
+    }
+  }, [user]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      setSavingProfile(true);
+      setSaveSuccess(false);
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          firstName: profileName,
+          imageUrl: profilePic
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          updateUser(data.user);
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 3000);
+          addActivity("edit", "Updated cloud user profile name and avatar image");
+        }
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to update profile");
+      }
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   // Fetch telemetry from server
   const fetchTelemetry = async () => {
@@ -133,6 +188,14 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
         {/* TAB CONTROLS */}
         <div className="flex bg-slate-100 p-1 rounded-xl border">
           <button
+            onClick={() => setActiveTab("profile")}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === "profile" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <User className="w-3.5 h-3.5 text-indigo-500" /> User Profile
+          </button>
+          <button
             onClick={() => setActiveTab("general")}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === "general" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-800"
@@ -152,7 +215,134 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
       </div>
 
       <AnimatePresence mode="wait">
-        {activeTab === "general" ? (
+        {activeTab === "profile" ? (
+          <motion.div
+            key="profile-tab"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-8 animate-fade-in"
+          >
+            {!isSignedIn || !user ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-lg mx-auto text-center space-y-5 shadow-sm">
+                <div className="w-16 h-16 bg-slate-50 border rounded-full flex items-center justify-center mx-auto">
+                  <User className="w-8 h-8 text-slate-400" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-black text-slate-900">Signed Out</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Sign in or create a secure cloud-native account to update your profile name, select a custom avatar, and persist your work across sessions.
+                  </p>
+                </div>
+                <div>
+                  <CustomSignInButton>
+                    <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl cursor-pointer shadow-lg shadow-indigo-500/20 transition-all">
+                      Sign In or Sign Up
+                    </button>
+                  </CustomSignInButton>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveProfile} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Profile Card & Avatar Selection */}
+                <div className="md:col-span-1 space-y-6">
+                  <div className="bg-white border rounded-2xl p-6 shadow-sm text-center space-y-4">
+                    <div className="relative w-24 h-24 mx-auto rounded-full overflow-hidden border-2 border-indigo-500/30 shadow-md">
+                      <img 
+                        src={profilePic || "/assets/image.jpg"} 
+                        alt="User Avatar" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900">{profileName || "User"}</h4>
+                      <p className="text-[10px] font-mono text-slate-400">{user.email}</p>
+                    </div>
+                    
+                    <div className="pt-2 border-t text-[10px] text-slate-400">
+                      Cloud Account: {user.id}
+                    </div>
+                  </div>
+
+                  <div className="bg-white border rounded-2xl p-6 shadow-sm">
+                    <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider mb-3">Custom Upload</h3>
+                    <FileUploader
+                      allowedTypes="image"
+                      label="Upload Photo to Cloudinary"
+                      onUploadSuccess={(url) => setProfilePic(url)}
+                    />
+                  </div>
+                </div>
+
+                {/* Form Fields & Gallery */}
+                <div className="md:col-span-2 bg-white border rounded-2xl p-6 shadow-sm space-y-6">
+                  <h3 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b pb-3">
+                    <User className="w-4.5 h-4.5 text-indigo-500" /> Account Customization
+                  </h3>
+
+                  {saveSuccess && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-xl text-xs font-bold flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Profile details updated successfully!
+                    </motion.div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 block">First Name / Nickname</label>
+                      <input
+                        type="text"
+                        required
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                        placeholder="Enter your name"
+                        className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 block">Profile Image URL</label>
+                      <input
+                        type="text"
+                        value={profilePic}
+                        onChange={(e) => setProfilePic(e.target.value)}
+                        placeholder="Or enter custom URL"
+                        className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <AvatarGalleryPicker
+                        currentValue={profilePic}
+                        onChange={(url) => setProfilePic(url)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={savingProfile}
+                      className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/10 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {savingProfile ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        "Save Profile Details"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </motion.div>
+        ) : activeTab === "general" ? (
           <motion.div
             key="general-tab"
             initial={{ opacity: 0, y: 10 }}

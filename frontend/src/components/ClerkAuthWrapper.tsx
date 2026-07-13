@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { LogOut, Mail, Lock, User as UserIcon, X, AlertCircle, ArrowLeft, RefreshCw, CheckCircle2, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import FileUploader from "./FileUploader";
 
 export const IS_CLERK_ENABLED = false;
 
@@ -18,6 +19,7 @@ interface AuthContextType {
   openSignIn: () => void;
   openSignUp: () => void;
   logout: () => void;
+  updateUser: (fields: Partial<UserType>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   openSignIn: () => {},
   openSignUp: () => {},
   logout: () => {},
+  updateUser: () => {},
 });
 
 // Helper to mask email securely: e.g. u*****@gmail.com
@@ -49,6 +52,7 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
+  const [signUpImageUrl, setSignUpImageUrl] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,6 +135,7 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
     setEmail("");
     setPassword("");
     setFirstName("");
+    setSignUpImageUrl("");
     setFormError("");
     setFormSuccess("");
     setDebugOtp("");
@@ -177,7 +182,7 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, firstName })
+        body: JSON.stringify({ email, password, firstName, imageUrl: signUpImageUrl })
       });
       const data = await res.json();
 
@@ -185,23 +190,9 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
         throw new Error(data.error || "Signup failed");
       }
 
-      if (data.needsVerification) {
-        setOtpEmail(data.email);
-        setOtpPurpose("verify");
-        setOtpValues(Array(6).fill(""));
-        setTimerCountdown(120);
-        setModalType("verify_otp");
-        if (data.debugOtp) setDebugOtp(data.debugOtp);
-        if (data.emailError) setEmailError(data.emailError);
-        // Auto focus first OTP input after a brief delay for rendering
-        setTimeout(() => {
-          if (otpRefs.current[0]) otpRefs.current[0].focus();
-        }, 150);
-      } else {
-        localStorage.setItem("token", data.token);
-        setUser(data.user);
-        setModalType(null);
-      }
+      localStorage.setItem("token", data.token);
+      setUser(data.user);
+      setModalType(null);
     } catch (err: any) {
       setFormError(err.message || "Something went wrong during sign up.");
     } finally {
@@ -233,23 +224,9 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
         throw new Error(data.error || "Login failed");
       }
 
-      if (data.needsVerification) {
-        setOtpEmail(data.email);
-        setOtpPurpose("verify");
-        setOtpValues(Array(6).fill(""));
-        setTimerCountdown(120);
-        setModalType("verify_otp");
-        if (data.debugOtp) setDebugOtp(data.debugOtp);
-        if (data.emailError) setEmailError(data.emailError);
-        // Auto focus first input
-        setTimeout(() => {
-          if (otpRefs.current[0]) otpRefs.current[0].focus();
-        }, 150);
-      } else {
-        localStorage.setItem("token", data.token);
-        setUser(data.user);
-        setModalType(null);
-      }
+      localStorage.setItem("token", data.token);
+      setUser(data.user);
+      setModalType(null);
     } catch (err: any) {
       setFormError(err.message || "Invalid credentials.");
     } finally {
@@ -510,6 +487,10 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
     }
   };
 
+  const updateUser = (fields: Partial<UserType>) => {
+    setUser((prev) => prev ? { ...prev, ...fields } : null);
+  };
+
   return (
     <AuthContext.Provider value={{
       isSignedIn: !!user,
@@ -517,7 +498,8 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
       isLoading,
       openSignIn,
       openSignUp,
-      logout
+      logout,
+      updateUser
     }}>
       {children}
 
@@ -707,7 +689,26 @@ export function ClerkAuthContainer({ children }: { children: React.ReactNode }) 
                     </div>
                   )}
 
-                  <form onSubmit={handleSignUpSubmit} className="space-y-4">
+                  <form onSubmit={handleSignUpSubmit} className="max-h-[380px] md:max-h-[440px] overflow-y-auto pr-2 -mr-2 custom-scrollbar space-y-4">
+                    {/* Optional Profile Photo upload with Cloudinary */}
+                    <div className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-slate-800/60 bg-slate-950/30 mb-2">
+                      <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500/30 shadow-md bg-slate-900/80 flex items-center justify-center">
+                        {signUpImageUrl ? (
+                          <img src={signUpImageUrl} alt="Uploaded preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="w-6 h-6 text-slate-500 animate-pulse" />
+                        )}
+                      </div>
+                      <div className="w-full">
+                        <FileUploader
+                          allowedTypes="image"
+                          label={signUpImageUrl ? "Change Profile Photo" : "Add Profile Photo (Optional)"}
+                          onUploadSuccess={(url) => setSignUpImageUrl(url)}
+                          className="!bg-slate-950/20 border-slate-800 text-slate-300 hover:text-white"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                         First Name
@@ -1142,12 +1143,13 @@ export function CustomSignUpButton({ children }: { children?: React.ReactNode })
 }
 
 export function useCustomUser() {
-  const { isSignedIn, user, isLoading, openSignIn, openSignUp } = useContext(AuthContext);
+  const { isSignedIn, user, isLoading, openSignIn, openSignUp, updateUser } = useContext(AuthContext);
   return {
     isSignedIn,
     user,
     isLoading,
     openSignIn,
-    openSignUp
+    openSignUp,
+    updateUser
   };
 }

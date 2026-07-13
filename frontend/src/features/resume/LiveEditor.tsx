@@ -4,6 +4,7 @@ import { useResumeStore } from "../../stores/resumeStore";
 import { ResumeData, TemplateId, ExperienceItem, ProjectItem, SkillGroup, EducationItem, AwardItem, CertificationItem } from "../../types";
 import TemplateRenderer from "../templates/TemplateRenderer";
 import FileUploader from "../../components/FileUploader";
+import AvatarGalleryPicker from "../../components/AvatarGalleryPicker";
 import { exportToPDF } from "../../utils/pdfExport";
 import {
   Sparkles,
@@ -425,6 +426,13 @@ export default function LiveEditor({
                         label="Upload Profile Photo to Cloudinary"
                         onUploadSuccess={(url) => updatePersonalInfo("photoUrl", url)}
                       />
+                      <div className="mt-3">
+                        <AvatarGalleryPicker
+                          currentValue={personalInfo.photoUrl}
+                          onChange={(url) => updatePersonalInfo("photoUrl", url)}
+                          title="Or Choose From Gallery"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

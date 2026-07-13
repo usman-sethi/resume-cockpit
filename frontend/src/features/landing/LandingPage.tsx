@@ -5,7 +5,6 @@ import gsap from "gsap";
 import ShapeGrid from "../../components/ShapeGrid";
 import Lightfall from "./Lightfall";
 import Orb from "./Orb";
-import LaptopMockup from "./LaptopMockup";
 import { CustomUserButton, CustomSignInButton, useCustomUser, IS_CLERK_ENABLED } from "../../components/ClerkAuthWrapper";
 
 
@@ -309,22 +308,21 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
         className="relative pt-20 pb-24 overflow-hidden group/hero"
       >
         {/* Animated Background Grid & Gradients */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-65 pointer-events-none overflow-hidden z-0 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]">
+        <div className="absolute inset-x-0 -top-24 bottom-0 opacity-65 pointer-events-none overflow-hidden z-0 [mask-image:radial-gradient(ellipse_100%_100%_at_50%_0%,#000_80%,transparent_100%)]">
           <motion.div
             initial={{ opacity: 0, scale: 0.93, filter: "blur(2px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             transition={{ duration: 1.4, ease: "easeOut" }}
-            style={{ width: '1080px', height: '1080px', position: 'relative' }}
-            className="flex-shrink-0"
+            style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
           >
             <ShapeGrid
-              speed={0.4}
-              squareSize={40}
+              speed={0.45}
+              squareSize={56}
               direction="diagonal"
-              borderColor="#cbd5e1"
-              hoverFillColor="#7C3AED"
+              borderColor="rgba(148, 163, 184, 0.16)"
+              hoverFillColor="rgba(99, 102, 241, 0.22)"
               shape="square"
-              hoverTrailAmount={6}
+              hoverTrailAmount={15}
             />
           </motion.div>
         </div>
@@ -360,9 +358,6 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
               Explore 12 Templates
             </a>
           </div>
-
-          {/* Premium Laptop POV interactive presentation */}
-          <LaptopMockup />
 
           {/* Social Proof */}
           <div className="pt-12 space-y-4">
@@ -740,22 +735,65 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-slate-950 text-slate-500 py-12 border-t border-slate-900">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/assets/image.jpg" 
-              alt="AI Resume Builder Logo" 
-              className="w-8 h-8 rounded-lg object-cover"
-              referrerPolicy="no-referrer"
-            />
-            <span className="text-white font-bold tracking-tight">AI Resume Builder</span>
+      <footer className="bg-slate-950 text-slate-400 py-16 border-t border-slate-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-slate-900">
+            {/* Branding & Info */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/assets/image.jpg" 
+                  alt="AI Resume Builder Logo" 
+                  className="w-8 h-8 rounded-lg object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="text-white font-extrabold tracking-tight text-sm">AI Resume Architect</span>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-xs">
+                The premier enterprise-grade, ATS-aligned resume drafting system powered by Gemini model orchestration and cloud storage persistence.
+              </p>
+            </div>
+
+            {/* Column 1: Product */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-300">Product Features</h4>
+              <ul className="space-y-2 text-xs">
+                <li><span className="hover:text-white transition-colors cursor-pointer">Interactive Workshop</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">12 Design Presets</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">ATS Audit Engine</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Job Match Profiler</span></li>
+              </ul>
+            </div>
+
+            {/* Column 2: Intelligence */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-300">AI Intelligence</h4>
+              <ul className="space-y-2 text-xs">
+                <li><span className="hover:text-white transition-colors cursor-pointer">Gemini Core Router</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">STAR Bullet Optimization</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Summary Tone Aligner</span></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Real-time Telemetry Logs</span></li>
+              </ul>
+            </div>
+
+            {/* Column 3: Legal & Resources */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-300">Company & Resources</h4>
+              <ul className="space-y-2 text-xs">
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">System Status</a></li>
+                <li><span className="hover:text-white transition-colors cursor-pointer">Developer API</span></li>
+              </ul>
+            </div>
           </div>
-          <p className="text-xs">© 2026 AI Resume Builder. All rights reserved. Built with pure craftsmanship.</p>
-          <div className="flex gap-6 text-xs font-semibold">
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
-            <a href="#" className="hover:text-white transition-colors">Status</a>
+
+          {/* Bottom Bar */}
+          <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+            <p>© 2026 AI Resume Architect. All rights reserved. Crafted with absolute precision and pure design artistry.</p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-mono uppercase text-slate-400 select-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" /> Cloud-Native Console Active
+            </div>
           </div>
         </div>
       </footer>
