@@ -32,14 +32,14 @@ Add these key-value pairs inside the **Environment Variables** panel:
 | Variable Name | Description | Value |
 | :--- | :--- | :--- |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Clerk Auth Integration Key | *Your clerk publishable key (if utilizing Clerk)* |
-| `VITE_API_URL` | Your Live Render API Host | `https://ai-resume-architect-backend.onrender.com` |
+| `VITE_API_URL` | Your Live Render API Host | `https://resume-cockpit-backend.onrender.com` |
 
 ---
 
 ### 4. Adjust the Proxy Destination (Optional)
 If your Render service uses a custom URL or has a different domain name:
 1. Open the `/frontend/vercel.json` file.
-2. Replace `https://ai-resume-architect-backend.onrender.com` in the `"destination"` parameter with your actual backend's Live URL.
+2. Replace `https://resume-cockpit-backend.onrender.com` in the `"destination"` parameter with your actual backend's Live URL.
 3. Commit and push the changes. Vercel will automatically trigger a rebuild!
 
 ---
