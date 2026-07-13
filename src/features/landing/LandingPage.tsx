@@ -179,7 +179,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img 
-              src="/assets/image.jpg" 
+              src="/logo.jpg" 
               alt="AI Resume Builder Logo" 
               className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl object-cover shadow-md shadow-slate-200"
               referrerPolicy="no-referrer"
@@ -742,7 +742,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <img 
-                  src="/assets/image.jpg" 
+                  src="/logo.jpg" 
                   alt="AI Resume Builder Logo" 
                   className="w-8 h-8 rounded-lg object-cover"
                   referrerPolicy="no-referrer"
