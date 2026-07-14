@@ -1,8 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
 
+// Disable command buffering so queries fail fast instead of hanging when disconnected
+mongoose.set("bufferCommands", false);
+
 // Configure MongoDB connection URI with fallback from environment variables
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
 export async function connectDB() {
   if (mongoose.connection.readyState >= 1) return;

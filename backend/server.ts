@@ -47,7 +47,7 @@ if (cleanSecretKey) {
   process.env.CLERK_SECRET_KEY = cleanSecretKey;
 }
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 // Initialize Resend Client using environment variable (safe placeholder for constructor safety)
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_placeholder_key_for_safety";
@@ -147,13 +147,49 @@ async function startServer() {
     console.error("Delayed MongoDB connection failed:", err);
   }
 
+  // Database connection check middleware to fail fast with actionable message
+  app.use(async (req, res, next) => {
+    if (req.path.startsWith("/api/auth") || req.path.startsWith("/api/resumes")) {
+      const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+      if (!uri) {
+        return res.status(503).json({
+          error: "Database configuration is missing. If deploying on Render, please go to your Render Web Service Dashboard, click 'Environment' -> 'Add Environment Variable', and set 'MONGODB_URI' to your MongoDB connection string. In AI Studio, you can configure it under Settings -> Secrets."
+        });
+      }
+
+      // If disconnected, try to connect again
+      if ((mongoose.connection.readyState as number) === 0) {
+        try {
+          await connectDB();
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // Wait briefly if it is connecting (readyState === 2)
+      if ((mongoose.connection.readyState as number) === 2) {
+        for (let i = 0; i < 5; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          if ((mongoose.connection.readyState as number) === 1) break;
+        }
+      }
+
+      if ((mongoose.connection.readyState as number) !== 1) {
+        return res.status(503).json({
+          error: "Unable to connect to your MongoDB database. Please verify your MONGODB_URI connection string is correct, your database is online, and it accepts connections."
+        });
+      }
+    }
+    next();
+  });
+
   // API ROUTES
 
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({
       status: "ok",
-      mongodbConnected: mongoose.connection.readyState >= 1,
+      mongodbConnected: (mongoose.connection.readyState as number) >= 1,
       geminiConfigured: !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "MY_GEMINI_API_KEY"
     });
   });
@@ -184,6 +220,40 @@ async function startServer() {
     } catch (err: any) {
       console.error("[Auth Me Error]:", err);
       res.status(500).json({ error: "Authentication failed" });
+    }
+  });
+
+  // Profile Update Route
+  app.put("/api/auth/profile", async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { firstName, imageUrl } = req.body;
+      const user = await UserModel.findOne({ id: userId } as any);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (firstName !== undefined) user.firstName = firstName;
+      if (imageUrl !== undefined) user.imageUrl = imageUrl;
+
+      await user.save();
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          imageUrl: user.imageUrl
+        }
+      });
+    } catch (err: any) {
+      console.error("[Profile Update Error]:", err);
+      res.status(500).json({ error: "Failed to update profile" });
     }
   });
 

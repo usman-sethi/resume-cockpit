@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: ai-resume-architect
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+        placeholder: "Your MongoDB Connection URI (e.g. mongodb+srv://...)"
+      - key: GEMINI_API_KEY
+        sync: false
+        placeholder: "Your Gemini API Key"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+        placeholder: "Optional: Cloudinary Cloud Name"
+      - key: CLOUDINARY_API_KEY
+        sync: false
+        placeholder: "Optional: Cloudinary API Key"
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+        placeholder: "Optional: Cloudinary API Secret"
+      - key: RESEND_API_KEY
+        sync: false
+        placeholder: "Optional: Resend Email API Key"
