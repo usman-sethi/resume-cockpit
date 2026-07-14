@@ -503,11 +503,25 @@ async function startServer() {
     console.log("Vite development server middleware loaded.");
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: "1y",
+      setHeaders: (res, filePath) => {
+        if (filePath.includes("/assets/")) {
+          // Immutable caching for bundler assets with hashes
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (filePath.endsWith(".html")) {
+          // Never cache HTML files to ensure clients always get updates
+          res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+        } else {
+          // Standard assets caching
+          res.setHeader("Cache-Control", "public, max-age=86400, must-revalidate");
+        }
+      }
+    }));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
-    console.log("Production static files serving loaded from /dist.");
+    console.log("Production static files serving loaded from /dist with optimized caching.");
   }
 
   app.listen(PORT, "0.0.0.0", () => {

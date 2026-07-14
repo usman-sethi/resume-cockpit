@@ -1,11 +1,93 @@
-import React from 'react';
+import React, { useId } from 'react';
 
-interface LogoZProps {
+export interface LogoZProps {
+  /** Size of the logo in pixels (width & height) */
   size?: number;
+  /** Custom CSS classes for styling */
   className?: string;
+  /**
+   * Style variant for different themes and corporate use cases:
+   * - `standard`: Premium Blue/Indigo Z on a dark Slate (#0F172A) container (Default)
+   * - `dark`: Clean white Z on an ultra-dark Slate (#090D16) container
+   * - `light`: Deep Slate (#0F172A) Z on a light Gray (#F8FAFC) container
+   * - `mono-black`: Solid black Z on a pure white container (or transparent if no container)
+   * - `mono-white`: Solid white Z on a transparent container
+   * - `minimal`: Pure Z monogram with no background container (uses currentColor or standard Blue)
+   * - `favicon`: Extra-bold, high-contrast simplified layout optimized for tiny 16px/32px viewports
+   */
+  variant?: 'standard' | 'dark' | 'light' | 'mono-black' | 'mono-white' | 'minimal' | 'favicon';
+  /** Optional hover scale transition (defaults to true) */
+  hoverEffect?: boolean;
 }
 
-export const LogoZ: React.FC<LogoZProps> = ({ size = 36, className = "" }) => {
+/**
+ * AI Resume Architect Brand Logo
+ * Redesigned as a world-class, premium geometric monogram based on a strict 45° grid.
+ * Employs clean mathematical symmetry and provides high legibility at all scales.
+ */
+export const LogoZ: React.FC<LogoZProps> = ({
+  size = 36,
+  className = "",
+  variant = "standard",
+  hoverEffect = true,
+}) => {
+  const uniqueId = useId();
+  const gradientId = `logo-z-gradient-${uniqueId}`;
+
+  // Container configuration based on variant choice
+  let containerBg = "#0F172A";
+  let containerBorder: string | null = null;
+  let useContainer = true;
+
+  switch (variant) {
+    case 'dark':
+      containerBg = "#090D16";
+      break;
+    case 'light':
+      containerBg = "#F8FAFC";
+      containerBorder = "#E2E8F0";
+      break;
+    case 'mono-black':
+      containerBg = "#FFFFFF";
+      containerBorder = "#000000";
+      break;
+    case 'mono-white':
+      containerBg = "transparent";
+      useContainer = false;
+      break;
+    case 'minimal':
+    case 'favicon':
+      containerBg = "transparent";
+      useContainer = false;
+      break;
+    case 'standard':
+    default:
+      containerBg = "#0F172A";
+      break;
+  }
+
+  // Z Path fill color/gradient definition
+  let zFill = `url(#${gradientId})`;
+  if (variant === 'dark' || variant === 'mono-white') {
+    zFill = "#F8FAFC";
+  } else if (variant === 'light') {
+    zFill = "#0F172A";
+  } else if (variant === 'mono-black') {
+    zFill = "#000000";
+  } else if (variant === 'minimal') {
+    zFill = "#2563EB"; // Inheritable or clean brand blue
+  }
+
+  // Path data for Z monogram
+  // Both standard and favicon paths feature 100% mathematical 180° rotational symmetry
+  const standardPath = "M 26 26 H 74 V 38 L 50 62 H 74 V 74 H 26 V 62 L 50 38 H 26 Z";
+  
+  // Favicon path is tuned to be bolder (16px thickness instead of 12px) 
+  // and sits closer to the edge for maximum pixel density and clarity at small sizes.
+  const faviconPath = "M 18 18 H 82 V 34 L 50 66 H 82 V 82 H 18 V 66 L 50 34 H 18 Z";
+
+  const pathData = (variant === 'favicon') ? faviconPath : standardPath;
+
   return (
     <svg
       width={size}
@@ -13,77 +95,43 @@ export const LogoZ: React.FC<LogoZProps> = ({ size = 36, className = "" }) => {
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`select-none ${className}`}
+      className={`select-none transition-transform duration-200 ${
+        hoverEffect ? 'hover:scale-[1.02]' : ''
+      } ${className}`}
+      shapeRendering="geometricPrecision"
+      role="img"
+      aria-label="AI Resume Architect Logo"
     >
-      <defs>
-        {/* Main background gradient */}
-        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#0f172a" />
-          <stop offset="100%" stopColor="#1e1b4b" />
-        </linearGradient>
+      <title>AI Resume Architect Brand Mark</title>
+      
+      {/* Definitive Gradient Configuration (only rendered when needed) */}
+      {(variant === 'standard' || variant === 'minimal') && (
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3B82F6" /> {/* Brand Blue 500 */}
+            <stop offset="100%" stopColor="#1D4ED8" /> {/* Brand Deep Blue 700 */}
+          </linearGradient>
+        </defs>
+      )}
 
-        {/* Glossy overlay gradient */}
-        <linearGradient id="glossGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity={0.15} />
-          <stop offset="40%" stopColor="#ffffff" stopOpacity={0.02} />
-          <stop offset="100%" stopColor="#000000" stopOpacity={0.4} />
-        </linearGradient>
-
-        {/* Letter Z Gradient */}
-        <linearGradient id="zGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#38bdf8" /> {/* Sky 400 */}
-          <stop offset="50%" stopColor="#2563eb" /> {/* Blue 600 */}
-          <stop offset="100%" stopColor="#7c3aed" /> {/* Violet 600 */}
-        </linearGradient>
-
-        {/* Glowing accent border gradient */}
-        <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.6} />
-          <stop offset="50%" stopColor="#4f46e5" stopOpacity={0.2} />
-          <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.7} />
-        </linearGradient>
-
-        {/* Subtle shadow filter */}
-        <filter id="logoGlow" x="-10%" y="-10%" width="120%" height="120%">
-          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#3b82f6" floodOpacity="0.3" />
-        </filter>
-      </defs>
-
-      {/* Base rounded square container */}
-      <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#bgGrad)" stroke="url(#borderGrad)" strokeWidth="1.5" />
-
-      {/* Secondary Inner Shadow and Gloss */}
-      <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#glossGrad)" pointerEvents="none" />
-
-      {/* Stylized Modern Z Graphic */}
-      <g filter="url(#logoGlow)">
-        {/* Left back accent element */}
-        <path
-          d="M 28 32 L 42 32 L 64 68 L 50 68 Z"
-          fill="#38bdf8"
-          opacity="0.15"
+      {/* Corporate Solid Rounded Square Container */}
+      {useContainer && (
+        <rect
+          x="2"
+          y="2"
+          width="96"
+          height="96"
+          rx="18"
+          fill={containerBg}
+          {...(containerBorder ? { stroke: containerBorder, strokeWidth: "3" } : {})}
         />
-        
-        {/* Solid ribbon Z */}
-        <path
-          d="M 26 28 
-             H 74 
-             C 76.5 28, 77.2 31.2, 75.3, 32.8 
-             L 39.5 68
-             H 74
-             C 76.5 68, 76.5 72, 74 72
-             H 26
-             C 23.5 72, 22.8 68.8, 24.7, 67.2
-             L 60.5 32
-             H 26
-             C 23.5 32, 23.5 28, 26 28 Z"
-          fill="url(#zGrad)"
-        />
+      )}
 
-        {/* Tech geometric notches - adding highly polished detail */}
-        <circle cx="71" cy="32" r="2.5" fill="#ffffff" opacity="0.9" />
-        <circle cx="29" cy="68" r="2.5" fill="#38bdf8" opacity="0.9" />
-      </g>
+      {/* Symmetrical Geometric Z Monogram */}
+      <path
+        d={pathData}
+        fill={zFill}
+      />
     </svg>
   );
 };
