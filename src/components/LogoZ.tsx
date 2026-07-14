@@ -10,12 +10,13 @@ export interface LogoZProps {
    * - `standard`: Premium Blue/Indigo Z on a dark Slate (#0F172A) container (Default)
    * - `dark`: Clean white Z on an ultra-dark Slate (#090D16) container
    * - `light`: Deep Slate (#0F172A) Z on a light Gray (#F8FAFC) container
+   * - `navbar-light`: Premium Blue/Indigo gradient Z on a transparent background with a subtle light border (perfect for light navbars)
    * - `mono-black`: Solid black Z on a pure white container (or transparent if no container)
    * - `mono-white`: Solid white Z on a transparent container
    * - `minimal`: Pure Z monogram with no background container (uses currentColor or standard Blue)
    * - `favicon`: Extra-bold, high-contrast simplified layout optimized for tiny 16px/32px viewports
    */
-  variant?: 'standard' | 'dark' | 'light' | 'mono-black' | 'mono-white' | 'minimal' | 'favicon';
+  variant?: 'standard' | 'dark' | 'light' | 'navbar-light' | 'mono-black' | 'mono-white' | 'minimal' | 'favicon';
   /** Optional hover scale transition (defaults to true) */
   hoverEffect?: boolean;
 }
@@ -46,6 +47,11 @@ export const LogoZ: React.FC<LogoZProps> = ({
     case 'light':
       containerBg = "#F8FAFC";
       containerBorder = "#E2E8F0";
+      break;
+    case 'navbar-light':
+      containerBg = "transparent";
+      containerBorder = "rgba(15, 23, 42, 0.08)";
+      useContainer = true;
       break;
     case 'mono-black':
       containerBg = "#FFFFFF";
@@ -105,7 +111,7 @@ export const LogoZ: React.FC<LogoZProps> = ({
       <title>AI Resume Architect Brand Mark</title>
       
       {/* Definitive Gradient Configuration (only rendered when needed) */}
-      {(variant === 'standard' || variant === 'minimal') && (
+      {(variant === 'standard' || variant === 'minimal' || variant === 'navbar-light') && (
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#3B82F6" /> {/* Brand Blue 500 */}

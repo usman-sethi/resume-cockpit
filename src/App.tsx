@@ -106,7 +106,7 @@ export default function App() {
                   onClick={() => { navigateToView("dashboard"); setMobileMenuOpen(false); }}
                   className="flex items-center gap-2 cursor-pointer group"
                 >
-                  <LogoZ size={32} />
+                  <LogoZ size={32} variant="navbar-light" />
                   <span className="font-extrabold text-xs sm:text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 max-w-[130px] sm:max-w-none truncate">
                     AI Resume Architect
                   </span>
