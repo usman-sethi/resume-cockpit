@@ -8,6 +8,7 @@ import ATSCheckerPage from "./features/ats/ATSCheckerPage";
 import JobMatchPage from "./features/ats/JobMatchPage";
 import SettingsPage from "./features/settings/SettingsPage";
 import { CustomUserButton, useCustomUser } from "./components/ClerkAuthWrapper";
+import { LogoZ } from "./components/LogoZ";
 import { motion } from "motion/react";
 
 import { Sparkles, LayoutDashboard, Sliders, LogOut, FileSearch, ShieldCheck, Menu, X } from "lucide-react";
@@ -105,13 +106,7 @@ export default function App() {
                   onClick={() => { navigateToView("dashboard"); setMobileMenuOpen(false); }}
                   className="flex items-center gap-2 cursor-pointer group"
                 >
-                  <img 
-                    src="/logo.png" 
-                    onError={(e) => { e.currentTarget.src = "/logo.jpg"; }}
-                    alt="AI Resume Architect Logo" 
-                    className="w-8 h-8 rounded-lg object-cover shadow-sm"
-                    referrerPolicy="no-referrer"
-                  />
+                  <LogoZ size={32} />
                   <span className="font-extrabold text-xs sm:text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 max-w-[130px] sm:max-w-none truncate">
                     AI Resume Architect
                   </span>

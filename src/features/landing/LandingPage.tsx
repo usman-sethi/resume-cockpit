@@ -5,6 +5,7 @@ import gsap from "gsap";
 import ShapeGrid from "../../components/ShapeGrid";
 import Lightfall from "./Lightfall";
 import Orb from "./Orb";
+import { LogoZ } from "../../components/LogoZ";
 import { CustomUserButton, CustomSignInButton, useCustomUser, IS_CLERK_ENABLED } from "../../components/ClerkAuthWrapper";
 import { useResumeStore } from "../../stores/resumeStore";
 
@@ -266,13 +267,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
       <header className="border-b border-slate-200/80 bg-white/85 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img 
-              src="/logo.png" 
-              onError={(e) => { e.currentTarget.src = "/logo.jpg"; }}
-              alt="AI Resume Builder Logo" 
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl object-cover shadow-md shadow-slate-200"
-              referrerPolicy="no-referrer"
-            />
+            <LogoZ size={36} />
             <span className="font-extrabold text-sm sm:text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight truncate max-w-[140px] sm:max-w-none">
               AI Resume Builder
             </span>
@@ -779,13 +774,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
             {/* Branding & Info */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <img 
-                  src="/logo.png" 
-                  onError={(e) => { e.currentTarget.src = "/logo.jpg"; }}
-                  alt="AI Resume Builder Logo" 
-                  className="w-8 h-8 rounded-lg object-cover"
-                  referrerPolicy="no-referrer"
-                />
+                <LogoZ size={32} />
                 <span className="text-white font-extrabold tracking-tight text-sm">AI Resume Architect</span>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed max-w-xs">
