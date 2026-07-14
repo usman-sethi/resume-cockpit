@@ -13,6 +13,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiPipelineEnabled: false,
   aiParallelMode: false,
   aiCacheEnabled: true,
+  subscriptionPlan: "basic",
+  premiumUnlocked: false,
+  promoCodeApplied: "",
 };
 
 export const SAMPLE_RESUME: ResumeData = {

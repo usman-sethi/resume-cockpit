@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, MouseEvent } from "react";
-import { Sparkles, FileText, CheckCircle2, Award, Zap, Download, ShieldCheck, ArrowRight, Star, Layers, HelpCircle, BarChart3, ArrowUpRight, Menu, X } from "lucide-react";
-import { motion } from "motion/react";
+import { Sparkles, FileText, CheckCircle2, Award, Zap, Download, ShieldCheck, ArrowRight, Star, Layers, HelpCircle, BarChart3, ArrowUpRight, Menu, X, CreditCard, Lock, Unlock, Check, AlertCircle, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import gsap from "gsap";
 import ShapeGrid from "../../components/ShapeGrid";
 import Lightfall from "./Lightfall";
 import Orb from "./Orb";
 import { CustomUserButton, CustomSignInButton, useCustomUser, IS_CLERK_ENABLED } from "../../components/ClerkAuthWrapper";
+import { useResumeStore } from "../../stores/resumeStore";
 
 
 
@@ -16,13 +17,40 @@ interface LandingPageProps {
 
 export default function LandingPage({ onStart, onSelectTemplate }: LandingPageProps) {
   const { isSignedIn } = useCustomUser();
+  const { settings, updateSettings } = useResumeStore();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [promoInput, setPromoInput] = useState("");
   const [isPromoApplied, setIsPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Mockup Checkout state variables
+  const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<"pro" | "enterprise" | null>(null);
+  const [cardName, setCardName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [checkoutPromo, setCheckoutPromo] = useState("");
+  const [checkoutPromoApplied, setCheckoutPromoApplied] = useState(false);
+  const [checkoutPromoError, setCheckoutPromoError] = useState("");
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
+
+  useEffect(() => {
+    if (selectedPlanForCheckout) {
+      setCheckoutPromo(promoInput || settings.promoCodeApplied || "");
+      setCheckoutPromoApplied(isPromoApplied);
+    }
+  }, [selectedPlanForCheckout, promoInput, isPromoApplied, settings.promoCodeApplied]);
+
   const testimonialsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (settings.premiumUnlocked) {
+      setIsPromoApplied(true);
+      setPromoInput(settings.promoCodeApplied || "sethi is best");
+    }
+  }, [settings.premiumUnlocked, settings.promoCodeApplied]);
 
   useEffect(() => {
     if (!testimonialsRef.current) return;
@@ -113,13 +141,74 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
   }, []);
 
   const handleApplyPromo = () => {
-    if (promoInput.trim().toLowerCase() === "sethi is best") {
+    const code = promoInput.trim().toLowerCase();
+    if (code === "sethi is best" || code === "premium" || code === "pro" || code === "admin") {
       setIsPromoApplied(true);
       setPromoError("");
+      updateSettings({
+        subscriptionPlan: "premium",
+        premiumUnlocked: true,
+        promoCodeApplied: promoInput.trim(),
+      });
     } else {
       setPromoError("Invalid secret code.");
       setIsPromoApplied(false);
+      updateSettings({
+        subscriptionPlan: "basic",
+        premiumUnlocked: false,
+        promoCodeApplied: "",
+      });
     }
+  };
+
+  const handleApplyCheckoutPromo = () => {
+    const code = checkoutPromo.trim().toLowerCase();
+    if (code === "sethi is best" || code === "premium" || code === "pro" || code === "admin") {
+      setCheckoutPromoApplied(true);
+      setCheckoutPromoError("");
+    } else {
+      setCheckoutPromoError("Invalid promotional code.");
+      setCheckoutPromoApplied(false);
+    }
+  };
+
+  const handleCompleteCheckout = () => {
+    if (!cardName.trim() || !cardNumber.trim() || !cardExpiry.trim() || !cardCvv.trim()) {
+      setCheckoutPromoError("Please fill out all payment credentials.");
+      return;
+    }
+    
+    // Check if sethi code is applied or typed in
+    const isCodeOk = checkoutPromoApplied || checkoutPromo.trim().toLowerCase() === "sethi is best" || checkoutPromo.trim().toLowerCase() === "premium" || checkoutPromo.trim().toLowerCase() === "pro" || checkoutPromo.trim().toLowerCase() === "admin";
+    if (!isCodeOk) {
+      setCheckoutPromoError("This checkout requires using code 'sethi is best' to access the special offer.");
+      return;
+    }
+
+    setIsSubmittingCheckout(true);
+    setCheckoutPromoError("");
+
+    setTimeout(() => {
+      setIsSubmittingCheckout(false);
+      setCheckoutSuccess(true);
+      
+      updateSettings({
+        subscriptionPlan: "premium",
+        premiumUnlocked: true,
+        promoCodeApplied: checkoutPromo.trim() || "sethi is best",
+      });
+
+      setCardName("");
+      setCardNumber("");
+      setCardExpiry("");
+      setCardCvv("");
+
+      setTimeout(() => {
+        setCheckoutSuccess(false);
+        setSelectedPlanForCheckout(null);
+        onStart();
+      }, 2200);
+    }, 1500);
   };
 
   const testimonials = [
@@ -179,7 +268,8 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img 
-              src="/logo.jpg" 
+              src="/logo.png" 
+              onError={(e) => { e.currentTarget.src = "/logo.jpg"; }}
               alt="AI Resume Builder Logo" 
               className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl object-cover shadow-md shadow-slate-200"
               referrerPolicy="no-referrer"
@@ -606,7 +696,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                   <li className="flex items-center gap-2">✔️ Customized Cover Letter drafting</li>
                 </ul>
               </div>
-              <button onClick={onStart} className={`w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
+              <button onClick={() => setSelectedPlanForCheckout("pro")} className={`w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
                 isPromoApplied 
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
                   : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
@@ -614,7 +704,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                 {isPromoApplied ? "Claim Sethi Premium Free Access" : "Unlock Pro Access"}
               </button>
             </div>
-
+ 
             {/* Enterprise */}
             <div className="border border-slate-200 rounded-2xl p-8 bg-slate-50/50 flex flex-col justify-between hover:shadow-md transition-shadow">
               <div className="space-y-6">
@@ -644,7 +734,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                   <li className="flex items-center gap-2">✔️ Higher token caps</li>
                 </ul>
               </div>
-              <button onClick={onStart} className={`w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              <button onClick={() => setSelectedPlanForCheckout("enterprise")} className={`w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 isPromoApplied
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                   : "bg-slate-800 hover:bg-slate-900 text-white"
@@ -742,7 +832,8 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <img 
-                  src="/logo.jpg" 
+                  src="/logo.png" 
+                  onError={(e) => { e.currentTarget.src = "/logo.jpg"; }}
                   alt="AI Resume Builder Logo" 
                   className="w-8 h-8 rounded-lg object-cover"
                   referrerPolicy="no-referrer"
@@ -797,6 +888,259 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
           </div>
         </div>
       </footer>
+
+      {/* MOCKUP TRANSACTION MODAL */}
+      <AnimatePresence>
+        {selectedPlanForCheckout && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden relative text-slate-800 flex flex-col"
+            >
+              {/* Header */}
+              <div className="bg-slate-900 text-white p-6 relative overflow-hidden flex justify-between items-center">
+                {/* Ambient lights */}
+                <div className="absolute -right-12 -bottom-12 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -left-12 -top-12 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold tracking-tight text-white">Secure Payment Gateway</h3>
+                    <p className="text-[11px] text-slate-400">Mock Transaction Sandbox Environment</p>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setSelectedPlanForCheckout(null);
+                    setCheckoutPromoError("");
+                  }} 
+                  className="p-1 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer relative z-10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {checkoutSuccess ? (
+                /* Success View */
+                <div className="p-8 text-center space-y-6 flex flex-col items-center justify-center min-h-[400px]">
+                  <div className="w-16 h-16 bg-emerald-50 border-4 border-emerald-500 rounded-full flex items-center justify-center text-emerald-500 text-3xl font-bold animate-bounce">
+                    <Check className="w-8 h-8 stroke-[3]" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-xl font-black text-slate-900">Transaction Approved!</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                      Your premium upgrade was successful! Lifetime <span className="font-bold text-slate-800">Pro Professional</span> features are now linked to your session.
+                    </p>
+                  </div>
+                  <div className="w-full max-w-xs space-y-2">
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: "0%" }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: 2, ease: "easeInOut" }}
+                        className="h-full bg-gradient-to-r from-blue-600 to-indigo-600"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest animate-pulse">
+                      Initializing Premium App Environment...
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Form View */
+                <div className="p-6 space-y-5 overflow-y-auto max-h-[80vh]">
+                  {/* Selected Plan Summary Card */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center">
+                    <div>
+                      <span className="text-[10px] font-black uppercase bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        Selected Tier
+                      </span>
+                      <h4 className="text-sm font-extrabold text-slate-800 mt-1">
+                        {selectedPlanForCheckout === "pro" ? "Pro Professional" : "Enterprise Elite"}
+                      </h4>
+                      <p className="text-[10px] text-slate-400">Recurring auto-renewing subscription</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-slate-800">
+                        {checkoutPromoApplied ? "$0.00" : selectedPlanForCheckout === "pro" ? "$19.00" : "$49.00"}
+                      </p>
+                      {checkoutPromoApplied && (
+                        <p className="text-[10px] text-emerald-600 font-bold line-through">
+                          {selectedPlanForCheckout === "pro" ? "$19.00" : "$49.00"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Promo Code Fields */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Promotion or secret code
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Enter coupon code (e.g. sethi is best)..."
+                          value={checkoutPromo}
+                          onChange={(e) => {
+                            setCheckoutPromo(e.target.value);
+                            setCheckoutPromoError("");
+                          }}
+                          className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400"
+                        />
+                        {checkoutPromoApplied && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 font-bold">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={handleApplyCheckoutPromo}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {checkoutPromoError && (
+                      <p className="text-xs text-rose-500 font-semibold flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        {checkoutPromoError}
+                      </p>
+                    )}
+                    {checkoutPromoApplied && (
+                      <p className="text-xs text-emerald-600 font-extrabold flex items-center gap-1">
+                        <Check className="w-4 h-4 stroke-[2.5]" />
+                        🎉 Code applied! 100% lifetime premium discount activated.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-[1px] w-full bg-slate-100" />
+
+                  {/* Card Payment Form fields */}
+                  <div className="space-y-4">
+                    <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                      Credit Card Sandbox
+                    </h5>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700">Cardholder Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Sethi Developer"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700 font-sans">Card Number</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="4111 1111 1111 1111"
+                          value={cardNumber}
+                          onChange={(e) => {
+                            const inputVal = e.target.value.replace(/\s?/g, '').replace(/[^0-9]/g, '');
+                            if (inputVal.length <= 16) {
+                              let formatted = "";
+                              for (let i = 0; i < inputVal.length; i++) {
+                                if (i > 0 && i % 4 === 0) formatted += " ";
+                                formatted += inputVal[i];
+                              }
+                              setCardNumber(formatted);
+                            }
+                          }}
+                          className="w-full pl-10 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400 font-mono"
+                        />
+                        <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-700 font-sans">Expiration Date</label>
+                        <input
+                          type="text"
+                          placeholder="MM/YY"
+                          value={cardExpiry}
+                          onChange={(e) => {
+                            const inputVal = e.target.value.replace(/\//g, '').replace(/[^0-9]/g, '');
+                            if (inputVal.length <= 4) {
+                              let formatted = inputVal;
+                              if (inputVal.length > 2) {
+                                formatted = inputVal.slice(0, 2) + "/" + inputVal.slice(2);
+                              }
+                              setCardExpiry(formatted);
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400 font-mono text-center"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-700 font-sans">CVV / Security Code</label>
+                        <input
+                          type="password"
+                          placeholder="123"
+                          value={cardCvv}
+                          onChange={(e) => {
+                            const inputVal = e.target.value.replace(/[^0-9]/g, '');
+                            if (inputVal.length <= 4) {
+                              setCardCvv(inputVal);
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400 font-mono text-center"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-3 space-y-2.5">
+                    <button
+                      onClick={handleCompleteCheckout}
+                      disabled={isSubmittingCheckout}
+                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {isSubmittingCheckout ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processing Sandbox Order...
+                        </>
+                      ) : checkoutPromoApplied ? (
+                        <>
+                          <Unlock className="w-4 h-4" />
+                          Activate Lifetime Free Premium - $0.00
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          Pay & Complete Transaction
+                        </>
+                      )}
+                    </button>
+                    
+                    <p className="text-[10px] text-center text-slate-400 leading-relaxed max-w-xs mx-auto font-sans">
+                      🔒 This is a simulated checkout screen. All payment transactions are secure sandboxed mocks. Enter <strong className="text-slate-600 font-extrabold">sethi is best</strong> to access the subscription features.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

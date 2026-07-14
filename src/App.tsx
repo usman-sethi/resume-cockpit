@@ -106,7 +106,8 @@ export default function App() {
                   className="flex items-center gap-2 cursor-pointer group"
                 >
                   <img 
-                    src="/logo.jpg" 
+                    src="/logo.png" 
+                    onError={(e) => { e.currentTarget.src = "/logo.jpg"; }}
                     alt="AI Resume Architect Logo" 
                     className="w-8 h-8 rounded-lg object-cover shadow-sm"
                     referrerPolicy="no-referrer"

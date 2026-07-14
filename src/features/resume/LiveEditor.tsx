@@ -31,7 +31,9 @@ import {
   Wand2,
   Copy,
   FolderDot,
-  CheckCircle
+  CheckCircle,
+  Lock,
+  Unlock
 } from "lucide-react";
 
 interface LiveEditorProps {
@@ -47,7 +49,7 @@ export default function LiveEditor({
   onNavigateToATS,
   onNavigateToSettings
 }: LiveEditorProps) {
-  const { resumes, updateActiveResume, undo, redo, canUndo, canRedo, settings, addActivity } = useResumeStore();
+  const { resumes, updateActiveResume, undo, redo, canUndo, canRedo, settings, addActivity, updateSettings } = useResumeStore();
   const resume = resumes.find((r) => r.id === resumeId);
 
   const [zoom, setZoom] = useState(0.85);
@@ -59,6 +61,33 @@ export default function LiveEditor({
   const [aiBulletVariants, setAiBulletVariants] = useState<{ [key: string]: string } | null>(null);
   const [selectedSummaryTone, setSelectedSummaryTone] = useState("Executive");
   const [pdfStatus, setPdfStatus] = useState<"idle" | "generating" | "success" | "error">("idle");
+
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [selectedLockedTemplate, setSelectedLockedTemplate] = useState<string | null>(null);
+  const [unlockCodeInput, setUnlockCodeInput] = useState("");
+  const [unlockError, setUnlockError] = useState("");
+  const [unlockSuccess, setUnlockSuccess] = useState(false);
+
+  const handleUnlockPremium = () => {
+    const code = unlockCodeInput.trim().toLowerCase();
+    if (code === "sethi is best" || code === "premium" || code === "pro" || code === "admin") {
+      updateSettings({
+        subscriptionPlan: "premium",
+        premiumUnlocked: true,
+        promoCodeApplied: unlockCodeInput.trim(),
+      });
+      setUnlockSuccess(true);
+      setUnlockError("");
+      addActivity("edit", "Unlocked premium access using code");
+      setTimeout(() => {
+        setUnlockSuccess(false);
+        setShowUnlockModal(false);
+        setUnlockCodeInput("");
+      }, 2000);
+    } else {
+      setUnlockError("Invalid premium code. Try 'sethi is best'.");
+    }
+  };
 
   const handleExportPDF = async () => {
     if (!resume) return;
@@ -283,6 +312,12 @@ export default function LiveEditor({
   };
 
   const handleTemplateSelect = (id: TemplateId) => {
+    const isLocked = id !== "minimal" && !settings.premiumUnlocked;
+    if (isLocked) {
+      setSelectedLockedTemplate(id);
+      setShowUnlockModal(true);
+      return;
+    }
     updateActiveResume(() => ({ templateId: id }));
     addActivity("edit", `Switched resume template design to "${id}"`);
   };
@@ -679,25 +714,93 @@ export default function LiveEditor({
 
           {/* DESIGN PRESETS / TEMPLATES TAB */}
           {activeTab === "templates" && (
-            <div className="grid grid-cols-2 gap-3.5">
-              {templates.map((tmpl) => (
-                <div
-                  key={tmpl.id}
-                  onClick={() => handleTemplateSelect(tmpl.id)}
-                  className={`border rounded-xl p-4 cursor-pointer hover:border-blue-500 hover:shadow-sm transition-all text-center space-y-3 relative overflow-hidden flex flex-col justify-between h-32 ${
-                    templateId === tmpl.id ? "border-blue-600 ring-2 ring-blue-500/10 bg-blue-50/10" : "border-gray-200"
-                  }`}
-                >
-                  <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block mx-auto w-max">
-                    {tmpl.id === "harvard" || tmpl.id === "stanford" ? "Serif Elite" : "Classic Layout"}
+            <div className="space-y-4">
+              {/* Premium Status / Upgrade Code Box */}
+              <div className="p-3.5 rounded-xl border bg-gradient-to-r from-slate-900 via-slate-950 to-indigo-950 text-white space-y-3 shadow-md relative overflow-hidden">
+                {/* Ambient gradient decoration */}
+                <div className="absolute -right-10 -bottom-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="flex justify-between items-center relative z-10">
+                  <div>
+                    <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-300">
+                      Subscription Tier
+                    </h4>
+                    <p className="text-sm font-black mt-0.5 flex items-center gap-1">
+                      {settings.premiumUnlocked ? <Unlock className="w-3.5 h-3.5 text-emerald-400" /> : <Lock className="w-3.5 h-3.5 text-slate-400" />}
+                      {settings.premiumUnlocked ? "Premium Lifetime Access" : "Basic Draft"}
+                    </p>
+                  </div>
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full relative z-10 ${
+                    settings.premiumUnlocked ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-slate-800 text-slate-300 border border-slate-700"
+                  }`}>
+                    {settings.premiumUnlocked ? "Premium" : "Basic"}
                   </span>
-                  <p className="text-xs font-bold text-slate-800">{tmpl.name}</p>
-                  
-                  {templateId === tmpl.id && (
-                    <span className="absolute bottom-1 right-1 text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Active</span>
-                  )}
                 </div>
-              ))}
+
+                {!settings.premiumUnlocked ? (
+                  <div className="space-y-2 pt-2.5 border-t border-white/10 relative z-10">
+                    <p className="text-[10px] text-slate-300 leading-relaxed">
+                      11 premium designs are locked. Enter activation code (e.g. <span className="text-indigo-300 font-bold">sethi is best</span>) to unlock instantly:
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Enter premium code..."
+                        value={unlockCodeInput}
+                        onChange={(e) => {
+                          setUnlockCodeInput(e.target.value);
+                          setUnlockError("");
+                        }}
+                        className="flex-1 px-2.5 py-1.5 text-xs rounded bg-white/10 border border-white/20 focus:outline-none focus:border-indigo-400 text-white placeholder-white/30"
+                      />
+                      <button
+                        onClick={handleUnlockPremium}
+                        className="px-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold rounded transition-colors cursor-pointer"
+                      >
+                        Unlock
+                      </button>
+                    </div>
+                    {unlockError && <p className="text-[10px] text-rose-400 font-semibold">{unlockError}</p>}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-emerald-300 font-medium relative z-10">
+                    Thank you for unlocking AI Resume Architect Premium! All templates are unlocked.
+                  </p>
+                )}
+              </div>
+
+              {/* Templates Grid */}
+              <div className="grid grid-cols-2 gap-3.5">
+                {templates.map((tmpl) => {
+                  const isLocked = tmpl.id !== "minimal" && !settings.premiumUnlocked;
+                  return (
+                    <div
+                      key={tmpl.id}
+                      onClick={() => handleTemplateSelect(tmpl.id)}
+                      className={`border rounded-xl p-4 cursor-pointer hover:border-blue-500 hover:shadow-sm transition-all text-center space-y-3 relative overflow-hidden flex flex-col justify-between h-32 ${
+                        templateId === tmpl.id ? "border-blue-600 ring-2 ring-blue-500/10 bg-blue-50/10" : "border-gray-200"
+                      } ${isLocked ? "bg-slate-50/50 hover:bg-slate-100/50" : ""}`}
+                    >
+                      {isLocked && (
+                        <div className="absolute top-2 right-2 bg-slate-200/80 p-1.5 rounded-full text-slate-500 shadow-sm">
+                          <Lock className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                      
+                      <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block mx-auto w-max">
+                        {tmpl.id === "harvard" || tmpl.id === "stanford" ? "Serif Elite" : tmpl.id === "minimal" ? "Free Core" : "Premium"}
+                      </span>
+                      <p className="text-xs font-bold text-slate-800 flex items-center justify-center gap-1">
+                        {tmpl.name}
+                      </p>
+                      
+                      {templateId === tmpl.id && (
+                        <span className="absolute bottom-1 right-1 text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Active</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -877,6 +980,91 @@ export default function LiveEditor({
           />
         </div>
       </div>
+
+      {/* Floating Premium Unlock Modal */}
+      <AnimatePresence>
+        {showUnlockModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 relative overflow-hidden text-slate-900"
+            >
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl animate-pulse">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">Unlock Premium Designs</h3>
+                  <p className="text-xs text-slate-500">Upgrade your Basic Draft to access all 12 templates</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-2">
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Under the <strong className="text-slate-900">Basic Draft</strong> plan, only the <strong className="text-slate-900">Cosmic Slate</strong> template is unlocked. Entering a premium activation code will instantly activate your lifetime <strong className="text-emerald-600">Pro Professional</strong> features.
+                  </p>
+                  <p className="text-[11px] text-indigo-600 font-bold">
+                    💡 Hint: You can use the code "sethi is best" to unlock everything.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500">
+                    Activation Code
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter secret code..."
+                      value={unlockCodeInput}
+                      onChange={(e) => {
+                        setUnlockCodeInput(e.target.value);
+                        setUnlockError("");
+                      }}
+                      className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleUnlockPremium();
+                      }}
+                    />
+                    <button
+                      onClick={handleUnlockPremium}
+                      className="px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      {unlockSuccess ? "Success!" : "Activate"}
+                    </button>
+                  </div>
+                  {unlockError && (
+                    <p className="text-xs text-rose-500 font-medium mt-1">{unlockError}</p>
+                  )}
+                  {unlockSuccess && (
+                    <p className="text-xs text-emerald-600 font-extrabold mt-1">
+                      🎉 Lifetime Pro Access Enabled successfully!
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2.5 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowUnlockModal(false);
+                      setUnlockError("");
+                      setUnlockCodeInput("");
+                    }}
+                    className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

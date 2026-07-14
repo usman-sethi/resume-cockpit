@@ -230,6 +230,9 @@ export interface AppSettings {
   aiPipelineEnabled?: boolean;
   aiParallelMode?: boolean;
   aiCacheEnabled?: boolean;
+  subscriptionPlan?: "basic" | "premium";
+  premiumUnlocked?: boolean;
+  promoCodeApplied?: string;
 }
 
 export interface RecentActivity {
