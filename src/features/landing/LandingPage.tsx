@@ -36,12 +36,15 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
 
+  const isCodeActive = checkoutPromoApplied || ["sethi is best", "premium", "pro", "admin"].includes(checkoutPromo.trim().toLowerCase());
+
   useEffect(() => {
     if (selectedPlanForCheckout) {
-      setCheckoutPromo(promoInput || settings.promoCodeApplied || "");
-      setCheckoutPromoApplied(isPromoApplied);
+      setCheckoutPromo("");
+      setCheckoutPromoApplied(false);
+      setCheckoutPromoError("");
     }
-  }, [selectedPlanForCheckout, promoInput, isPromoApplied, settings.promoCodeApplied]);
+  }, [selectedPlanForCheckout]);
 
   const testimonialsRef = useRef<HTMLDivElement>(null);
 
@@ -179,11 +182,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
     }
     
     // Check if sethi code is applied or typed in
-    const isCodeOk = checkoutPromoApplied || checkoutPromo.trim().toLowerCase() === "sethi is best" || checkoutPromo.trim().toLowerCase() === "premium" || checkoutPromo.trim().toLowerCase() === "pro" || checkoutPromo.trim().toLowerCase() === "admin";
-    if (!isCodeOk) {
-      setCheckoutPromoError("This checkout requires using code 'sethi is best' to access the special offer.");
-      return;
-    }
+    const isCodeOk = checkoutPromoApplied || ["sethi is best", "premium", "pro", "admin"].includes(checkoutPromo.trim().toLowerCase());
 
     setIsSubmittingCheckout(true);
     setCheckoutPromoError("");
@@ -195,7 +194,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
       updateSettings({
         subscriptionPlan: "premium",
         premiumUnlocked: true,
-        promoCodeApplied: checkoutPromo.trim() || "sethi is best",
+        promoCodeApplied: isCodeOk ? (checkoutPromo.trim() || "sethi is best") : "",
       });
 
       setCardName("");
@@ -608,35 +607,6 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
             <p className="text-slate-600 text-sm leading-relaxed">
               No hidden contracts. Access complete professional generation features, unlimited templates, and deep ATS matching.
             </p>
-
-            {/* Secret Code Input */}
-            <div className="pt-4 max-w-md mx-auto">
-              <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl border focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-                <input
-                  type="text"
-                  placeholder="Enter secret code (e.g. sethi is best)..."
-                  value={promoInput}
-                  onChange={(e) => setPromoInput(e.target.value)}
-                  className="flex-1 px-3 py-1.5 text-xs bg-transparent border-0 focus:outline-none text-slate-800"
-                />
-                <button
-                  onClick={handleApplyPromo}
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black rounded-lg transition-all cursor-pointer"
-                >
-                  Apply Code
-                </button>
-              </div>
-              {isPromoApplied && (
-                <p className="text-xs text-emerald-600 font-extrabold mt-2 animate-bounce">
-                  🎉 Code Applied! "sethi is best" active. Enjoy 100% lifetime premium discount!
-                </p>
-              )}
-              {promoError && (
-                <p className="text-xs text-rose-500 font-medium mt-2">
-                  ❌ {promoError}
-                </p>
-              )}
-            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -675,18 +645,8 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                   <p className="text-xs text-slate-500 mt-1">Complete suite for serious applicants</p>
                 </div>
                 <div className="flex items-baseline">
-                  {isPromoApplied ? (
-                    <>
-                      <span className="text-4xl font-black text-emerald-600">$0</span>
-                      <span className="text-xs text-slate-400 line-through ml-2">$19</span>
-                      <span className="text-[10px] text-emerald-600 font-bold ml-2">Lifetime Free</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-4xl font-black text-slate-900">$19</span>
-                      <span className="text-xs text-slate-500 ml-1">/ month</span>
-                    </>
-                  )}
+                  <span className="text-4xl font-black text-slate-900">$19</span>
+                  <span className="text-xs text-slate-500 ml-1">/ month</span>
                 </div>
                 <ul className="space-y-3 text-xs text-slate-600 border-t pt-4">
                   <li className="flex items-center gap-2">✔️ Unlimited Resumes</li>
@@ -696,12 +656,11 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                   <li className="flex items-center gap-2">✔️ Customized Cover Letter drafting</li>
                 </ul>
               </div>
-              <button onClick={() => setSelectedPlanForCheckout("pro")} className={`w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer ${
-                isPromoApplied 
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
-                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
-              }`}>
-                {isPromoApplied ? "Claim Sethi Premium Free Access" : "Unlock Pro Access"}
+              <button 
+                onClick={() => setSelectedPlanForCheckout("pro")} 
+                className="w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 cursor-pointer"
+              >
+                Unlock Pro Access
               </button>
             </div>
  
@@ -713,18 +672,8 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                   <p className="text-xs text-slate-500 mt-1">For corporate teams and agencies</p>
                 </div>
                 <div className="flex items-baseline">
-                  {isPromoApplied ? (
-                    <>
-                      <span className="text-4xl font-black text-emerald-600">$0</span>
-                      <span className="text-xs text-slate-400 line-through ml-2">$49</span>
-                      <span className="text-[10px] text-emerald-600 font-bold ml-2">Lifetime Free</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-4xl font-black text-slate-900">$49</span>
-                      <span className="text-xs text-slate-500 ml-1">/ month</span>
-                    </>
-                  )}
+                  <span className="text-4xl font-black text-slate-900">$49</span>
+                  <span className="text-xs text-slate-500 ml-1">/ month</span>
                 </div>
                 <ul className="space-y-3 text-xs text-slate-600 border-t pt-4">
                   <li className="flex items-center gap-2">✔️ Everything in Pro plan</li>
@@ -734,12 +683,11 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                   <li className="flex items-center gap-2">✔️ Higher token caps</li>
                 </ul>
               </div>
-              <button onClick={() => setSelectedPlanForCheckout("enterprise")} className={`w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                isPromoApplied
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  : "bg-slate-800 hover:bg-slate-900 text-white"
-              }`}>
-                {isPromoApplied ? "Claim Sethi Enterprise Free Access" : "Contact Enterprise"}
+              <button 
+                onClick={() => setSelectedPlanForCheckout("enterprise")} 
+                className="w-full mt-8 py-2.5 rounded-xl text-xs font-bold transition-all bg-slate-800 hover:bg-slate-900 text-white cursor-pointer"
+              >
+                Unlock Enterprise Access
               </button>
             </div>
           </div>
@@ -969,9 +917,9 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black text-slate-800">
-                        {checkoutPromoApplied ? "$0.00" : selectedPlanForCheckout === "pro" ? "$19.00" : "$49.00"}
+                        {isCodeActive ? "$0.00" : selectedPlanForCheckout === "pro" ? "$19.00" : "$49.00"}
                       </p>
-                      {checkoutPromoApplied && (
+                      {isCodeActive && (
                         <p className="text-[10px] text-emerald-600 font-bold line-through">
                           {selectedPlanForCheckout === "pro" ? "$19.00" : "$49.00"}
                         </p>
@@ -996,7 +944,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                           }}
                           className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400"
                         />
-                        {checkoutPromoApplied && (
+                        {isCodeActive && (
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-600 font-bold">
                             Active
                           </span>
@@ -1015,7 +963,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                         {checkoutPromoError}
                       </p>
                     )}
-                    {checkoutPromoApplied && (
+                    {isCodeActive && (
                       <p className="text-xs text-emerald-600 font-extrabold flex items-center gap-1">
                         <Check className="w-4 h-4 stroke-[2.5]" />
                         🎉 Code applied! 100% lifetime premium discount activated.
@@ -1118,7 +1066,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Processing Sandbox Order...
                         </>
-                      ) : checkoutPromoApplied ? (
+                      ) : isCodeActive ? (
                         <>
                           <Unlock className="w-4 h-4" />
                           Activate Lifetime Free Premium - $0.00
@@ -1126,7 +1074,7 @@ export default function LandingPage({ onStart, onSelectTemplate }: LandingPagePr
                       ) : (
                         <>
                           <Lock className="w-4 h-4" />
-                          Pay & Complete Transaction
+                          Pay & Complete Transaction - {selectedPlanForCheckout === "pro" ? "$19.00" : "$49.00"}
                         </>
                       )}
                     </button>
